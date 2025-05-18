@@ -17,10 +17,10 @@ export const getGlobalTTL = () => globalTTL;
 
 type KeyType = string | string[] | CacheKeyBuilder | CacheEvictKeyBuilder;
 
-const extract = (b: KeyType, a: unknown[]) =>
-  Array.isArray(b instanceof Function ? (b as any)(...a) : b)
-    ? (b as string[])
-    : [b as any];
+const extract = (b: KeyType, a: unknown[]) => {
+  const result = typeof b === 'function' ? (b as any)(...a) : b;
+  return Array.isArray(result) ? result : [result];
+};
 
 export function generateComposedKey(opts: {
   key?: string | CacheKeyBuilder | CacheEvictKeyBuilder;
