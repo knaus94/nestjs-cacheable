@@ -2,7 +2,7 @@
 
 > Service-level caching for NestJS.
 
-`@knaus94/nestjs-cacheable` extends the standard `CacheModule` so you can cache **service method** calls—not only controller responses—using two simple decorators:
+`@dessly/nestjs-cacheable` extends the standard `CacheModule` so you can cache **service method** calls—not only controller responses—using two simple decorators:
 
 | Decorator       | Purpose                                                         |
 |-----------------|-----------------------------------------------------------------|
@@ -14,8 +14,8 @@
 ## Installation
 
 ```bash
-npm i @knaus94/nestjs-cacheable          # or
-yarn add @knaus94/nestjs-cacheable
+npm i @dessly/nestjs-cacheable          # or
+yarn add @dessly/nestjs-cacheable
 ```
 
 ## Quick Start
