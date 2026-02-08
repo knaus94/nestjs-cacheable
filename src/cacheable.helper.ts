@@ -214,14 +214,8 @@ const findValkeyLockClient = (
   return undefined;
 };
 
-const REQUIRED_VALKEY_STORE_ERROR =
-  '[nestjs-cacheable] Valkey store was not found in CACHE_MANAGER.stores. Configure CacheModule with a Keyv Valkey store so distributed lock can work.';
-
 export const setCacheManager = (m: Cache) => {
   cacheManager = m;
-  if (!findValkeyLockClient(m)) {
-    throw new Error(REQUIRED_VALKEY_STORE_ERROR);
-  }
 };
 
 const resolveLockClient = (): CacheableDistributedLockClient | undefined => {

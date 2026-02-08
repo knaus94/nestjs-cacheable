@@ -2,7 +2,7 @@
 
 > Service-level caching for NestJS.
 
-`@dessly/nestjs-cacheable` provides service-level method caching powered by `Keyv`/`@keyv/valkey`.
+`@dessly/nestjs-cacheable` provides service-level method caching powered by Nest `cache-manager`.
 
 | Decorator       | Purpose                                                         |
 |-----------------|-----------------------------------------------------------------|
@@ -76,6 +76,7 @@ export class UserService {
 
 - In-process deduplication for same key (`single-flight`).
 - Optional distributed lock across instances (`SET NX PX`) when Redis/Valkey client is available.
+- If Redis/Valkey client is not found, library falls back to local single-flight only.
 - `fail-open` on cache write errors (business method result is still returned).
 - `null` values are cached (negative caching).
 
