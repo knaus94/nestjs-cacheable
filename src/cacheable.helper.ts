@@ -6,14 +6,13 @@ import {
   CacheableDistributedLockClient,
   CacheableLockOptions,
 } from './cacheable.interface';
-import type KeyvValkey from '@keyv/valkey';
+import type { Cache } from 'cache-manager';
 
 /* ─────────────── Cache holder ─────────────────────────────────── */
 
-let cacheManager: KeyvValkey | undefined;
+let cacheManager: Cache | undefined;
 let globalTTL = 0; // milliseconds
 
-export const setCacheManager = (m: KeyvValkey) => (cacheManager = m);
 export const getCacheManager = () => cacheManager;
 export const setGlobalTTL = (ttl: number) => (globalTTL = ttl);
 export const getGlobalTTL = () => globalTTL;
@@ -177,11 +176,58 @@ const hasLockClient = (value: unknown): value is CacheableDistributedLockClient 
   typeof (value as { set?: unknown }).set === 'function' &&
   typeof (value as { eval?: unknown }).eval === 'function';
 
+const getStoreRedisClient = (store: unknown): unknown => {
+  if (!store || typeof store !== 'object') return undefined;
+
+  const candidate = store as {
+    redis?: unknown;
+    store?: unknown;
+    opts?: { store?: unknown };
+  };
+
+  if (candidate.redis !== undefined) return candidate.redis;
+
+  if (candidate.store && typeof candidate.store === 'object') {
+    const nested = candidate.store as { redis?: unknown };
+    if (nested.redis !== undefined) return nested.redis;
+  }
+
+  if (candidate.opts?.store && typeof candidate.opts.store === 'object') {
+    const nested = candidate.opts.store as { redis?: unknown };
+    if (nested.redis !== undefined) return nested.redis;
+  }
+
+  return undefined;
+};
+
+const findValkeyLockClient = (
+  manager: Cache | undefined,
+): CacheableDistributedLockClient | undefined => {
+  const stores = manager?.stores;
+  if (!stores?.length) return undefined;
+
+  for (const store of stores) {
+    const redis = getStoreRedisClient(store);
+    if (hasLockClient(redis)) return redis;
+  }
+
+  return undefined;
+};
+
+const REQUIRED_VALKEY_STORE_ERROR =
+  '[nestjs-cacheable] Valkey store was not found in CACHE_MANAGER.stores. Configure CacheModule with a Keyv Valkey store so distributed lock can work.';
+
+export const setCacheManager = (m: Cache) => {
+  cacheManager = m;
+  if (!findValkeyLockClient(m)) {
+    throw new Error(REQUIRED_VALKEY_STORE_ERROR);
+  }
+};
+
 const resolveLockClient = (): CacheableDistributedLockClient | undefined => {
   if (lockOptions.client && hasLockClient(lockOptions.client)) return lockOptions.client;
 
-  const redis = cacheManager?.redis;
-  return hasLockClient(redis) ? redis : undefined;
+  return findValkeyLockClient(cacheManager);
 };
 
 const tryAcquireLock = async (

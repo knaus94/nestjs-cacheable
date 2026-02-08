@@ -61,7 +61,7 @@ export function CacheEvict(
                   methodName: String(propertyKey),
                   args,
                 });
-                return cm.deleteMany(keys);
+                return cm.mdel(keys);
               }),
             );
           } catch {
