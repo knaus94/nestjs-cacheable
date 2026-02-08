@@ -74,8 +74,13 @@ export const setLockOptions = (opts?: false | CacheableLockOptions) => {
 
 type KeyType = string | string[] | CacheKeyBuilder | CacheEvictKeyBuilder;
 
+const isKeyBuilder = (
+  value: KeyType,
+): value is CacheKeyBuilder | CacheEvictKeyBuilder =>
+  typeof value === 'function';
+
 const extract = (b: KeyType, a: unknown[]) => {
-  const result = typeof b === 'function' ? (b as any)(...a) : b;
+  const result = isKeyBuilder(b) ? b(...a) : b;
   return Array.isArray(result) ? result : [result];
 };
 
@@ -175,7 +180,7 @@ const hasLockClient = (value: unknown): value is CacheableDistributedLockClient 
 const resolveLockClient = (): CacheableDistributedLockClient | undefined => {
   if (lockOptions.client && hasLockClient(lockOptions.client)) return lockOptions.client;
 
-  const redis = (cacheManager as any)?.redis;
+  const redis = cacheManager?.redis;
   return hasLockClient(redis) ? redis : undefined;
 };
 

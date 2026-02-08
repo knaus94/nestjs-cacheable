@@ -23,6 +23,7 @@ yarn add @dessly/nestjs-cacheable
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import KeyvValkey from '@keyv/valkey';
 import { CacheableModule } from '@knaus94/nestjs-cacheable';
 
@@ -30,10 +31,11 @@ const cache = new KeyvValkey('redis://localhost:6379');
 
 @Module({
   imports: [
-    CacheableModule.register({
-      cache,
-      defaultTTL: 5000,
+    CacheModule.register({
+      stores: [cache],
+      isGlobal: true,
     }),
+    CacheableModule.register({ defaultTTL: 5000 }),
   ],
 })
 export class AppModule {}
@@ -68,7 +70,7 @@ export class UserService {
 | ----------------------------------- | ------------------------------------------------------------------------------ |
 | **`Cacheable(options)`**            | Caches the method result. <br>Options: `key`, `namespace`, `ttl`.              |
 | **`CacheEvict(options)`**           | Deletes keys after the method succeeds.                                        |
-| **`CacheableModule.register(cfg)`** | Enables service-level caching.<br>`cfg.cache` is required.<br>`cfg.defaultTTL` sets fallback TTL (ms). |
+| **`CacheableModule.register(cfg)`** | Enables service-level caching.<br>`cfg.defaultTTL` sets fallback TTL (ms).     |
 
 ## Concurrency behavior
 
@@ -79,7 +81,6 @@ export class UserService {
 
 ```typescript
 CacheableModule.register({
-  cache,
   defaultTTL: 5000,
   lock: {
     enabled: true,

@@ -1,20 +1,23 @@
-import { DynamicModule, Module } from '@nestjs/common';
+import { DynamicModule, Inject, Module } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { setCacheManager, setGlobalTTL, setLockOptions } from './cacheable.helper';
 import { CacheableLockOptions } from './cacheable.interface';
 import type KeyvValkey from '@keyv/valkey';
 
 export interface CacheableModuleOptions {
-  cache: KeyvValkey;
   defaultTTL?: number;
   lock?: false | CacheableLockOptions;
 }
 
 @Module({})
 export class CacheableModule {
-  static register(opts: CacheableModuleOptions): DynamicModule {
-    setCacheManager(opts.cache);
-    if (opts.defaultTTL !== undefined) setGlobalTTL(opts.defaultTTL);
-    if (opts.lock !== undefined) setLockOptions(opts.lock);
+  constructor(@Inject(CACHE_MANAGER) private readonly cache: KeyvValkey) {
+    setCacheManager(this.cache);
+  }
+
+  static register(opts: CacheableModuleOptions = {}): DynamicModule {
+    setGlobalTTL(opts.defaultTTL ?? 0);
+    setLockOptions(opts.lock);
     return { module: CacheableModule };
   }
 }

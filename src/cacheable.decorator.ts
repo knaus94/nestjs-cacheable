@@ -8,27 +8,31 @@ import {
   CacheEvictRegisterOptions,
 } from './cacheable.interface';
 
+type AsyncMethod = (...args: unknown[]) => Promise<unknown>;
+
 /* ─── @Cacheable ───────────────────────────────────────────────── */
 
 export function Cacheable(opts: CacheableRegisterOptions): MethodDecorator {
-  return (t, p, d) => {
-    const original = d.value as (...a: any[]) => Promise<unknown>;
+  return (_target, propertyKey, descriptor) => {
+    const original = descriptor.value as AsyncMethod;
 
-    (d as any).value = async function (...args: unknown[]) {
+    (descriptor as PropertyDescriptor).value = (async function (
+      ...args: unknown[]
+    ) {
       const cm = getCacheManager();
       if (!cm) return original.apply(this, args);
 
       const key = generateComposedKey({
-        methodName: String(p),
+        methodName: String(propertyKey),
         key: opts.key,
         namespace: opts.namespace,
         args,
       })[0];
 
       return cacheableHandle(key, () => original.apply(this, args), opts.ttl);
-    };
+    }) as AsyncMethod;
 
-    return d;
+    return descriptor;
   };
 }
 
@@ -37,10 +41,12 @@ export function Cacheable(opts: CacheableRegisterOptions): MethodDecorator {
 export function CacheEvict(
   ...opts: CacheEvictRegisterOptions[]
 ): MethodDecorator {
-  return (t, p, d) => {
-    const original = d.value as (...a: any[]) => Promise<unknown>;
+  return (_target, propertyKey, descriptor) => {
+    const original = descriptor.value as AsyncMethod;
 
-    (d as any).value = async function (...args: unknown[]) {
+    (descriptor as PropertyDescriptor).value = (async function (
+      ...args: unknown[]
+    ) {
       const cm = getCacheManager();
       let result: unknown;
       try {
@@ -52,13 +58,10 @@ export function CacheEvict(
               opts.map((o) => {
                 const keys = generateComposedKey({
                   ...o,
-                  methodName: String(p),
+                  methodName: String(propertyKey),
                   args,
                 });
-                if (typeof cm.deleteMany === 'function') {
-                  return cm.deleteMany(keys);
-                }
-                return Promise.all(keys.map((key) => cm.delete(key)));
+                return cm.deleteMany(keys);
               }),
             );
           } catch {
@@ -67,8 +70,8 @@ export function CacheEvict(
         }
       }
       return result;
-    };
+    }) as AsyncMethod;
 
-    return d;
+    return descriptor;
   };
 }
