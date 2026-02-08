@@ -2,7 +2,7 @@
 
 > Service-level caching for NestJS.
 
-`@dessly/nestjs-cacheable` extends the standard `CacheModule` so you can cache **service method** calls—not only controller responses—using two simple decorators:
+`@dessly/nestjs-cacheable` provides service-level method caching powered by `Keyv`/`@keyv/valkey`.
 
 | Decorator       | Purpose                                                         |
 |-----------------|-----------------------------------------------------------------|
@@ -22,13 +22,18 @@ yarn add @dessly/nestjs-cacheable
 
 ```typescript
 // app.module.ts
-import { Module, CacheModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import KeyvValkey from '@keyv/valkey';
 import { CacheableModule } from '@knaus94/nestjs-cacheable';
+
+const cache = new KeyvValkey('redis://localhost:6379');
 
 @Module({
   imports: [
-    CacheModule.register({ isGlobal: true }), // any cache-manager store
-    CacheableModule.register(),               // default JSON serializer
+    CacheableModule.register({
+      cache,
+      defaultTTL: 5000,
+    }),
   ],
 })
 export class AppModule {}
@@ -63,7 +68,29 @@ export class UserService {
 | ----------------------------------- | ------------------------------------------------------------------------------ |
 | **`Cacheable(options)`**            | Caches the method result. <br>Options: `key`, `namespace`, `ttl`.              |
 | **`CacheEvict(options)`**           | Deletes keys after the method succeeds.                                        |
-| **`CacheableModule.register(cfg)`** | Enables service-level caching.<br>`cfg.defaultTTL` (ms) sets a fallback TTL.   |
+| **`CacheableModule.register(cfg)`** | Enables service-level caching.<br>`cfg.cache` is required.<br>`cfg.defaultTTL` sets fallback TTL (ms). |
+
+## Concurrency behavior
+
+- In-process deduplication for same key (`single-flight`).
+- Optional distributed lock across instances (`SET NX PX`) when Redis/Valkey client is available.
+- `fail-open` on cache write errors (business method result is still returned).
+- `null` values are cached (negative caching).
+
+```typescript
+CacheableModule.register({
+  cache,
+  defaultTTL: 5000,
+  lock: {
+    enabled: true,
+    prefix: 'nestjs-cacheable-lock',
+    ttl: 5000,
+    waitTimeout: 2000,
+    retryDelay: 40,
+    retryJitter: 20,
+  },
+});
+```
 
 ## License
 

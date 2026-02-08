@@ -1,6 +1,6 @@
 {
   "name": "@dessly/nestjs-cacheable",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "a simple service level cache module in NestJs",
   "author": "knaus94",
   "license": "MIT",
@@ -17,18 +17,17 @@
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix"
   },
   "dependencies": {
-    "@nestjs/cache-manager": "^3.0.1",
+    "@keyv/valkey": "^1.0.11",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
-    "@prisma/client": "^6.16.2",
-    "cache-manager": "^7.2.0",
+    "keyv": "^5.5.5",
     "safe-stable-stringify": "^2.5.0"
   },
   "peerDependencies": {
-    "@nestjs/cache-manager": ">=3.0.1",
+    "@keyv/valkey": ">=1.0.11",
     "@nestjs/common": ">=11.1.6",
     "@nestjs/core": ">=11.1.6",
-    "cache-manager": ">=7.2.0"
+    "keyv": ">=5.5.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",

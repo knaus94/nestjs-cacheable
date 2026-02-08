@@ -41,23 +41,29 @@ export function CacheEvict(
     const original = d.value as (...a: any[]) => Promise<unknown>;
 
     (d as any).value = async function (...args: unknown[]) {
+      const cm = getCacheManager();
       let result: unknown;
       try {
         result = await original.apply(this, args);
       } finally {
-        try {
-          await Promise.all(
-            opts.map((o) => {
-              const keys = generateComposedKey({
-                ...o,
-                methodName: String(p),
-                args,
-              });
-              return getCacheManager().mdel(keys);
-            }),
-          );
-        } catch {
-          /* ignore eviction errors */
+        if (cm) {
+          try {
+            await Promise.all(
+              opts.map((o) => {
+                const keys = generateComposedKey({
+                  ...o,
+                  methodName: String(p),
+                  args,
+                });
+                if (typeof cm.deleteMany === 'function') {
+                  return cm.deleteMany(keys);
+                }
+                return Promise.all(keys.map((key) => cm.delete(key)));
+              }),
+            );
+          } catch {
+            /* ignore eviction errors */
+          }
         }
       }
       return result;
